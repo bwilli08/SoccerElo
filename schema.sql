@@ -1,4 +1,4 @@
-DROP DATABASE IF EXISTS soccerElo;
+#DROP DATABASE IF EXISTS soccerElo;
 CREATE DATABASE soccerElo DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 #CREATE USER 'usr'@'localhost' IDENTIFIED BY 'psswrd';
