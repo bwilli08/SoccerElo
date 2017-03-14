@@ -17,11 +17,20 @@ List of Queries (Michael)
     in July 1st)
 11) Find top 20 upsets in history (top 20 largest ELO gains over one game)
 12) For Team X, return net difference in ELO for given year
-13) For Team X, return biggest upset in its own history
+13) For Team X, return biggest upset in its own history (max elo gain)
 14) For Team X, return net difference in ELO for given month
+15) For Team X and Date Y, return the rank of the team
+16) Find top 5 upsets for given year
 
 List of Queries (Brent)
 
 List of Queries (Dylan)
 
 List of Queries (Vihari)
+
+
+NOTE: ROOM FOR EXPANSION
+we can potentially use current elo to create new matches and predict game
+outcomes based off factors such as home field advantage. Can also add a little
+randomness to this so we can almost simulate games and not completely know
+the outcome
