@@ -40,6 +40,11 @@ public class DBUpdater {
                     .filter(e -> !localEntries.contains(e))
                     .forEach(e -> eloDAO.addToLocalDatabase(statement, e));
             eloDAO.executeBatch(statement);
+
+            localEntries.stream()
+                    .filter(e -> !clubEloEntries.contains(e))
+                    .forEach(e -> eloDAO.removeFromLocalDatabase(statement, e));
+            eloDAO.executeBatch(statement);
         });
     }
 }
