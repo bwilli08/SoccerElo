@@ -36,6 +36,16 @@ public class EloDAO {
         }
     }
 
+    public void removeFromLocalDatabase(final Statement statement, final EloEntry entry) {
+        try {
+            System.out.println("Removing " + entry);
+            statement.addBatch(String.format("DELETE FROM ClubEloEntry WHERE name='%s' AND startDate='%s' AND " +
+                            "endDate='%s'", entry.getClubName(), entry.getStartDate(), entry.getEndDate()));
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure adding %s entry to database.", entry), e);
+        }
+    }
+
     public void executeBatch(final Statement statement) {
         try {
             statement.executeLargeBatch();
