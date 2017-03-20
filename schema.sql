@@ -24,3 +24,4 @@ CREATE TABLE ClubEloEntry (
     PRIMARY KEY (entryId),
     FOREIGN KEY (name, country) REFERENCES Club (name, country)
 );
+
