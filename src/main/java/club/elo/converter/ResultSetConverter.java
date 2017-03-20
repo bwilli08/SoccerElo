@@ -3,15 +3,27 @@ package club.elo.converter;
 import club.elo.pojo.EloEntry;
 
 import java.sql.ResultSet;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Converts a ResultSet to the entry POJO. Indexing starts at 1, and since we don't care about the 'entryId'
  * and it's set to autoincrement, we can just ignore it.
  */
 public class ResultSetConverter {
+
+    public List<String> convertToTeamNames(final ResultSet rs) {
+        List<String> teams = new ArrayList<>();
+
+        try {
+            while (rs.next()) {
+                teams.add(rs.getString(1));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
+        }
+
+        return teams;
+    }
 
     public Set<EloEntry> convertToPOJO(final ResultSet rs) {
         Set<EloEntry> entries = new HashSet<>();

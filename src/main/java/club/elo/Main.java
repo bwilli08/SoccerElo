@@ -2,11 +2,12 @@ package club.elo;
 
 import club.elo.converter.ClubEloConverter;
 import club.elo.converter.ResultSetConverter;
+import club.elo.dao.EloDAO;
+import club.elo.pojo.EloEntry;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Main {
@@ -20,7 +21,9 @@ public class Main {
         String username = "usr";
         String password = "psswrd";
         String status = "continue";
-        String command;
+        String command, team;
+        Date date;
+        Optional<EloEntry> entry;
         Scanner input = new Scanner(System.in);
 
         System.out.println("Connecting to database...");
@@ -29,6 +32,7 @@ public class Main {
             System.out.println("Connected!");
             Statement statement = connection.createStatement();
             DBUpdater dbUpdater = new DBUpdater(new ClubEloConverter(), new ResultSetConverter());
+            EloDAO dao = new EloDAO(new ResultSetConverter());
             
             // Ask user if he/she wants to update database
             System.out.println("Would you like to update your local database to contain current statistics?");
@@ -50,12 +54,50 @@ public class Main {
 
                 command = input.nextLine().toLowerCase();
                 switch(command) {
+                    case "teams":
+                        List<String> teams = dao.getLocalTeams(statement);
+                        for (int x = 0; x < teams.size(); x++) {
+                            if (x % 10 == 0)
+                                System.out.println();
+                            System.out.print(String.format("%s ", teams.get(x)));
+                        }
+                        break;
+                    case "currentelo":
+                        team = input.nextLine();
+                        entry = dao.getLocalClubEntry(statement, team, Optional.of(1)).stream().findFirst();
+                        if (entry.isPresent()) {
+                            System.out.println(String.format("Current Elo of %s: %s", team, entry.get().getElo()));
+                        } else {
+                            System.out.println(String.format("Team %s not found in database.", team));
+                        }
+                        break;
+                    case "maxelo":
+                        team = input.nextLine();
+                        entry = dao.getMaxEloEntry(statement, team).stream().findFirst();
+                        if (entry.isPresent()) {
+                            System.out.println(String.format("Max Elo of %s: %s from %s to %s", team, entry.get().getElo(), entry.get().getStartDate(), entry.get().getEndDate()));
+                        } else {
+                            System.out.println(String.format("Team %s not found in database.", team));
+                        }
+                        break;
+                    case "best":
+                        // Needs to be in YYYY-MM-DD format
+                        date = Date.valueOf(input.nextLine());
+                        entry = dao.getBestForDate(statement, date, Optional.of(1)).stream().findFirst();
+                        if (entry.isPresent()) {
+                            System.out.println(String.format("Max Elo on %s: %s with an elo of %s", date, entry.get().getClubName(), entry.get().getElo()));
+                        } else {
+                            System.out.println(String.format("Error for date %s.", date));
+                        }
                     case "global":
                         break;
                     case "specific":
                         break;
                     case "quit":
                         status = "quit";
+                        break;
+                    default:
+                        System.out.println(String.format("[%s] is an unknown command", command));
                         break;
                 }
             }

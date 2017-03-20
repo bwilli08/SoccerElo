@@ -4,8 +4,11 @@ import club.elo.converter.ResultSetConverter;
 import club.elo.pojo.EloEntry;
 import lombok.AllArgsConstructor;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -16,9 +19,44 @@ public class EloDAO {
 
     private final ResultSetConverter rsConverter;
 
-    public Set<EloEntry> getLocalClubEntry(final Statement statement, final String clubName) {
+    public Set<EloEntry> getBestForDate(final Statement statement, final Date date, final Optional<Integer> limit) {
+        String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s' ORDER BY elo DESC", date, date);
+        if (limit.isPresent()) {
+            sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));
+        }
         try {
-            ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry CE WHERE CE.name='%s'", clubName));
+            ResultSet rs = statement.executeQuery(sqlQuery);
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+        }
+    }
+
+    public Set<EloEntry> getMaxEloEntry(final Statement statement, final String clubName) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo DESC LIMIT 1", clubName));
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
+        }
+    }
+
+    public List<String> getLocalTeams(final Statement statement) {
+        try {
+            ResultSet rs = statement.executeQuery("SELECT DISTINCT name FROM ClubEloEntry ORDER BY name ASC");
+            return rsConverter.convertToTeamNames(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database for local teams.", e);
+        }
+    }
+
+    public Set<EloEntry> getLocalClubEntry(final Statement statement, final String clubName, final Optional<Integer> limit) {
+        String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY startDate DESC", clubName);
+        if (limit.isPresent()) {
+            sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));
+        }
+        try {
+            ResultSet rs = statement.executeQuery(sqlQuery);
             return rsConverter.convertToPOJO(rs);
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
