@@ -19,6 +19,16 @@ public class EloDAO {
 
     private final ResultSetConverter rsConverter;
 
+    public Set<EloEntry> getBestAllTime(final Statement statement, final Integer limit) {
+        String sqlQuery = String.format("SELECT * FROM ClubEloEntry ORDER BY elo DESC LIMIT %d", limit);
+        try {
+            ResultSet rs = statement.executeQuery(sqlQuery);
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
     public Set<EloEntry> getBestForDate(final Statement statement, final Date date, final Optional<Integer> limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s' ORDER BY elo DESC", date, date);
         if (limit.isPresent()) {

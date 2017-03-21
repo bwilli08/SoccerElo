@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main {
 
@@ -31,7 +32,9 @@ public class Main {
             try (Scanner input = new Scanner(System.in)) {
                 String status = "continue";
                 String command, team;
+                Integer limit;
                 Date date;
+                Set<EloEntry> entries;
                 Optional<EloEntry> entry;
 
                 // Ask user if he/she wants to update database
@@ -46,7 +49,7 @@ public class Main {
 
                 // TODO: Command line interface for user interaction and queries to the DB.
                 while (status.equals("continue")) {
-                    System.out.print("Choose the type of transaction");
+                    System.out.println("Choose the type of transaction");
                     // TODO: Accurate help message
                     System.out.println("[Quit]: End program");
 
@@ -91,6 +94,14 @@ public class Main {
                             } catch (IllegalArgumentException e) {
                                 System.out.println(e.getMessage());
                             }
+                            break;
+                        case "alltime":
+                            limit = Integer.valueOf(input.nextLine());
+                            entries = dao.getBestAllTime(statement, limit);
+                            entries.stream()
+                                    .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
+                                    .forEach(e -> System.out.println(e));
+                            break;
                         case "quit":
                             status = "quit";
                             break;
