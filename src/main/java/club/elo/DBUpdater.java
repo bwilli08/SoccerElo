@@ -10,6 +10,7 @@ import club.elo.request.DateRequest;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -33,7 +34,7 @@ public class DBUpdater {
         dateRequest.get(Date.from(Instant.now())).stream().forEach(clubEntry -> {
             final String clubName = clubEntry.getClubName();
 
-            Set<EloEntry> localEntries = eloDAO.getLocalClubEntry(statement, clubName);
+            Set<EloEntry> localEntries = eloDAO.getLocalClubEntry(statement, clubName, Optional.empty());
             Set<EloEntry> clubEloEntries = clubRequest.get(clubName);
 
             clubEloEntries.stream()
