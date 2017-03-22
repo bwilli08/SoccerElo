@@ -16,6 +16,19 @@ public class Main {
     // TODO: Create object that contains methods for various DB queries
     private static final String JDB_URL = "jdbc:mysql://localhost:3306/soccerElo?rewriteBatchedStatements=true";
 
+    private void printCommands() {
+        System.out.println("teams");
+        System.out.println(" -- get names of every team in Europe");
+        System.out.println("currentelo");
+        System.out.println(" -- obtain current elo for team [Team Name]");
+        System.out.println("maxelo");
+        System.out.println(" -- obtain the highest ELO in history for team [Team Name]");
+        System.out.println("best");
+        System.out.println(" -- obtain the Team with the highest elo for specified date [date]");
+        System.out.println("alltime");
+        System.out.println(" -- obtain a list of the N best teams of all time");
+    }
+
     public static void main(String args[]) throws Exception {
         /* Change these according to your local database connection */
         String username = "usr";
@@ -50,11 +63,17 @@ public class Main {
                 // TODO: Command line interface for user interaction and queries to the DB.
                 while (status.equals("continue")) {
                     System.out.println("Choose the type of transaction");
+                    System.out.println("--type [help] to view list of commands");
+                    //System.out.println("--type [help] [command] for description of specific command");
+                    
                     // TODO: Accurate help message
+
                     System.out.println("[Quit]: End program");
 
                     command = input.nextLine().toLowerCase();
                     switch (command) {
+                        case "help":
+                            printCommands();
                         case "teams":
                             List<String> teams = dao.getLocalTeams(statement);
                             for (int x = 0; x < teams.size(); x++) {
