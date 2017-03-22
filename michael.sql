@@ -51,10 +51,45 @@ drop view MinElo;
 
 7)
 create view TeamHistory as
-select C.country, C.name, C.elo
+select C.elo, C.endDate
 from ClubEloEntry C
 where C.country = [country] and C.name = [name];
 
-select C.country, C.name
+create view TeamsWorst as
+select T.endDate, T.elo
+from TeamHistory T
+where T.elo = (select min(T.elo) from TeamHistory T);
+
+select 1 + count(*) as numBetterTeams
 from ClubEloEntry C
-where C.elo = (select min(T.elo) from TeamHistory T);
+where C.startDate <= (select T.endDate from TeamsWorst T)
+    and C.endDate >= (select T.endDate from TeamsWorst T)
+    and C.elo >= (select T.elo from TeamsWorst T);
+
+drop view TeamHistory;
+drop view TeamsWorst;
+
+8)
+create view TeamsOverEra as
+select C.country, C.name, C.elo
+from ClubEloEntry C
+where C.startDate >= [startEra] and C.endDate <= [endEra];
+
+create view AvgOverEra
+select T.country, T.name, avg(T.elo) as avgElo
+from TeamsOverEra T
+group by T.country, T.name;
+
+create view Min
+select min(A.avgElo) as minAvg
+from AvgOverEra A
+order by A.avgElo desc
+limit 20;
+
+select A.country, A.name
+from AvgOverEra A
+where A.avgElo >= (select M.minAvg from Min M);
+
+drop view TeamsOverEra;
+drop view AvgOverEra;
+drop view Min;
