@@ -24,7 +24,21 @@ public class ResultSetConverter {
 
         return teams;
     }
+/*
+    // Create conversion methods for various objects defined in pojo pkg
+    public List<TeamAndCountry> convertToTeamAndCountry(final ResultSet rs) {
+        List<TeamAndCountry> teams = new ArrayList<>();
 
+        try {
+            while (rs.next()) {
+                TeamAndCountry.Builder builder = TeamAndCountry.builder();
+
+                builder.clubName(String.class.cast(rs.getObject(ndx++)));
+                
+            }
+        }
+    }
+*/
     public Set<EloEntry> convertToPOJO(final ResultSet rs) {
         Set<EloEntry> entries = new HashSet<>();
 
