@@ -1,5 +1,6 @@
 package club.elo.converter;
 
+import club.elo.pojo.EloChange;
 import club.elo.pojo.EloEntry;
 
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class ResultSetConverter {
                 teams.add(rs.getString(1));
             }
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
+            throw new RuntimeException(String.format("Failure converting result set to team names."), e);
         }
 
         return teams;
@@ -29,10 +30,33 @@ public class ResultSetConverter {
         int rank;
 
         try {
-            rank = rs.getInt(2);
+            while (rs.next()) {
+                rank = rs.getInt(2);
+            }
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
         }
+
+        return rank;
+    }
+
+    public Set<EloChange> convertToEloChanges(final ResultSet rs) {
+        Set<EloChange> changes = new HashSet<>();
+
+        try {
+            while (rs.next()) {
+                int ndx = 1;
+                EloChange.Builder builder = EloChange.builder();
+                builder.name(rs.getString(ndx++));
+                builder.date(rs.getDate(ndx++));
+                builder.change(rs.getDouble(ndx));
+                changes.add(builder.build());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure converting result set to elo changes."), e);
+        }
+
+        return changes;
     }
 
     public Set<EloEntry> convertToPOJO(final ResultSet rs) {

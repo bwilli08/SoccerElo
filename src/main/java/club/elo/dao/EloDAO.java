@@ -1,12 +1,15 @@
 package club.elo.dao;
 
 import club.elo.converter.ResultSetConverter;
+import club.elo.pojo.EloChange;
 import club.elo.pojo.EloEntry;
 import lombok.AllArgsConstructor;
 
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -56,6 +59,40 @@ public class EloDAO {
            
     }
 
+    private final static String DATE_QUERY = "SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s'";
+    private final static String CLUB_DATE_QUERY = DATE_QUERY + " AND name='%s'";
+    private static final String UPSET_QUERY = "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
+            "FROM (SELECT * FROM ClubEloEntry WHERE name='%s') as E1, (SELECT * FROM ClubEloEntry WHERE name='%s') as E2\n" +
+            "WHERE E1.entryId!=E2.entryId AND DATEDIFF(e1.startDate, e2.endDate) = 1\n" +
+            "ORDER BY eloChange ASC\n" +
+            "LIMIT 1;";
+
+    public Double changeBetween(final Statement statement, final String name, final Date date, final Date secondDate) {
+        final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", secondDate, date, name);
+        final String lastDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate DESC LIMIT 1", secondDate, date, name);
+
+        try {
+            final Optional<EloEntry> first = rsConverter.convertToPOJO(statement.executeQuery(firstDateQuery)).stream().findFirst();
+            final Optional<EloEntry> last = rsConverter.convertToPOJO(statement.executeQuery(lastDateQuery)).stream().findFirst();
+
+            if (first.isPresent() && last.isPresent()) {
+                return first.get().getElo() - last.get().getElo();
+            }
+            return Double.MAX_VALUE;
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+        }
+    }
+
+    public Set<EloChange> getBiggestUpset(final Statement statement, final String clubName) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format(UPSET_QUERY, clubName, clubName));
+            return rsConverter.convertToEloChanges(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
     public Set<EloEntry> getBestAllTime(final Statement statement, final Integer limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry ORDER BY elo DESC LIMIT %d", limit);
         try {
@@ -67,7 +104,7 @@ public class EloDAO {
     }
 
     public Set<EloEntry> getBestForDate(final Statement statement, final Date date, final Optional<Integer> limit) {
-        String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s' ORDER BY elo DESC", date, date);
+        String sqlQuery = String.format(DATE_QUERY + " ORDER BY elo DESC", date, date);
         if (limit.isPresent()) {
             sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));
         }
@@ -79,10 +116,19 @@ public class EloDAO {
         }
     }
 
-    public Set<EloEntry> getMaxEloEntry(final Statement statement, final String clubName) {
+    public Optional<EloEntry> getMaxEloEntry(final Statement statement, final String clubName) {
         try {
             ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo DESC LIMIT 1", clubName));
-            return rsConverter.convertToPOJO(rs);
+            return rsConverter.convertToPOJO(rs).stream().findFirst();
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
+        }
+    }
+
+    public Optional<EloEntry> getMinEloEntry(final Statement statement, final String clubName) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo ASC LIMIT 1", clubName));
+            return rsConverter.convertToPOJO(rs).stream().findFirst();
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
         }
@@ -97,7 +143,7 @@ public class EloDAO {
         }
     }
 
-    public Set<EloEntry> getLocalClubEntry(final Statement statement, final String clubName, final Optional<Integer> limit) {
+    public Set<EloEntry> getClubEntries(final Statement statement, final String clubName, final Optional<Integer> limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY startDate DESC", clubName);
         if (limit.isPresent()) {
             sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));

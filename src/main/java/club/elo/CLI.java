@@ -3,16 +3,15 @@ package club.elo;
 import club.elo.converter.ClubEloConverter;
 import club.elo.converter.ResultSetConverter;
 import club.elo.dao.EloDAO;
+import club.elo.pojo.EloChange;
 import club.elo.pojo.EloEntry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 
 import java.sql.Date;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * Created by Brent Williams on 3/22/2017.
@@ -31,7 +30,9 @@ public class CLI {
         String status = "continue";
         String command, team;
         Integer limit;
-        Date date;
+        Double change;
+        Date date, secondDate;
+        Set<EloChange> changes;
         Set<EloEntry> entries;
         Optional<EloEntry> entry;
 
@@ -47,14 +48,13 @@ public class CLI {
 
         // TODO: Command line interface for user interaction and queries to the DB.
         while (status.equals("continue")) {
-            System.out.println("Choose the type of transaction");
-            System.out.println("--type [help] to view list of commands");
-            System.out.println("[Quit]: End program");
+            System.out.println("Enter your transaction (type help for command info):");
 
-            command = input.nextLine().toLowerCase();
+            command = input.next().toLowerCase();
             switch (command) {
                 case "help":
                     printCommands();
+                    break;
                 case "teams":
                     List<String> teams = dao.getLocalTeams(statement);
                     for (int x = 0; x < teams.size(); x++) {
@@ -64,8 +64,8 @@ public class CLI {
                     }
                     break;
                 case "currentelo":
-                    team = input.nextLine();
-                    entry = dao.getLocalClubEntry(statement, team, Optional.of(1)).stream().findFirst();
+                    team = input.next();
+                    entry = dao.getClubEntries(statement, team, Optional.of(1)).stream().findFirst();
                     if (entry.isPresent()) {
                         System.out.println(String.format("Current Elo of %s: %s", team, entry.get().getElo()));
                     } else {
@@ -73,10 +73,19 @@ public class CLI {
                     }
                     break;
                 case "maxelo":
-                    team = input.nextLine();
-                    entry = dao.getMaxEloEntry(statement, team).stream().findFirst();
+                    team = input.next();
+                    entry = dao.getMaxEloEntry(statement, team);
                     if (entry.isPresent()) {
                         System.out.println(String.format("Max Elo of %s: %s from %s to %s", team, entry.get().getElo(), entry.get().getStartDate(), entry.get().getEndDate()));
+                    } else {
+                        System.out.println(String.format("Team %s not found in database.", team));
+                    }
+                    break;
+                case "minelo":
+                    team = input.next();
+                    entry = dao.getMinEloEntry(statement, team);
+                    if (entry.isPresent()) {
+                        System.out.println(String.format("Min Elo of %s: %s from %s to %s", team, entry.get().getElo(), entry.get().getStartDate(), entry.get().getEndDate()));
                     } else {
                         System.out.println(String.format("Team %s not found in database.", team));
                     }
@@ -84,7 +93,7 @@ public class CLI {
                 case "best":
                     // Needs to be in YYYY-MM-DD format
                     try {
-                        date = Date.valueOf(input.nextLine());
+                        date = Date.valueOf(input.next());
                         entry = dao.getBestForDate(statement, date, Optional.of(1)).stream().findFirst();
                         if (entry.isPresent()) {
                             System.out.println(String.format("Max Elo on %s: %s with an elo of %s", date, entry.get().getClubName(), entry.get().getElo()));
@@ -96,11 +105,37 @@ public class CLI {
                     }
                     break;
                 case "alltime":
-                    limit = Integer.valueOf(input.nextLine());
+                    limit = input.nextInt();
                     entries = dao.getBestAllTime(statement, limit);
                     entries.stream()
                             .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
                             .forEach(e -> System.out.println(e));
+                    break;
+                case "change":
+                    team = input.next();
+                    try {
+                        date = Date.valueOf(input.next());
+                        secondDate = Date.valueOf(input.next());
+                        change = dao.changeBetween(statement, team, date, secondDate);
+
+                        if (!change.equals(Double.MAX_VALUE)) {
+                            System.out.println(String.format("%s changed %s from %s to %s.", team, change, date.toString(), secondDate.toString()));
+                        } else {
+                            System.out.println("Something bad happened.");
+                        }
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                case "upset":
+                    team = input.next();
+                    changes = dao.getBiggestUpset(statement, team);
+                    if (changes.isEmpty()) {
+                        System.out.println("Something bad happened.");
+                    } else {
+                        EloChange eChange = changes.stream().findFirst().get();
+                        System.out.println(String.format("%s's biggest upset: %s elo loss on %s", team, eChange.getChange(), eChange.getDate()));
+                    }
                     break;
                 case "quit":
                     status = "quit";
@@ -109,20 +144,37 @@ public class CLI {
                     System.out.println(String.format("[%s] is an unknown command", command));
                     break;
             }
+            input.nextLine();
             System.out.println();
         }
     }
 
     private void printCommands() {
+        System.out.println("help");
+        System.out.println(" -- List this message.");
         System.out.println("teams");
-        System.out.println(" -- get names of every team in Europe");
-        System.out.println("currentelo");
+        System.out.println(" -- get names of every team in the database");
+        System.out.println("currentelo [TeamName]");
         System.out.println(" -- obtain current elo for team [Team Name]");
-        System.out.println("maxelo");
+        System.out.println("maxelo [TeamName]");
         System.out.println(" -- obtain the highest ELO in history for team [Team Name]");
-        System.out.println("best");
+        System.out.println("minelo [TeamName]");
+        System.out.println(" -- obtain the lowest ELO in history for team [Team Name]");
+        System.out.println("best [Date]");
         System.out.println(" -- obtain the Team with the highest elo for specified date [date]");
-        System.out.println("alltime");
+        System.out.println("alltime [NumTeams]");
         System.out.println(" -- obtain a list of the N best teams of all time");
+        System.out.println("change [TeamName] [Date1] [Date2]");
+        System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
+        System.out.println("upset [TeamName]");
+        System.out.println(" -- return [TeamName]'s biggest loss of elo (WARNING: This takes a long time!)");
+        System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
+    }
+
+    private Date plusMonth(final Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.MONTH, 1);
+        return new Date(calendar.getTime().getTime());
     }
 }

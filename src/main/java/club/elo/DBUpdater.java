@@ -34,7 +34,7 @@ public class DBUpdater {
         dateRequest.get(Date.from(Instant.now())).stream().forEach(clubEntry -> {
             final String clubName = clubEntry.getClubName();
 
-            Set<EloEntry> localEntries = eloDAO.getLocalClubEntry(statement, clubName, Optional.empty());
+            Set<EloEntry> localEntries = eloDAO.getClubEntries(statement, clubName, Optional.empty());
             Set<EloEntry> clubEloEntries = clubRequest.get(clubName);
 
             clubEloEntries.stream()
