@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -19,6 +21,26 @@ public class EloDAO {
 
     private final ResultSetConverter rsConverter;
 
+    private final static String DATE_QUERY = "SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s'";
+    private final static String CLUB_DATE_QUERY = DATE_QUERY + " AND name='%s'";
+
+    public Double changeBetween(final Statement statement, final String name, final Date date, final Date secondDate) {
+        final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", secondDate, date, name);
+        final String lastDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate DESC LIMIT 1", secondDate, date, name);
+
+        try {
+            final Optional<EloEntry> first = rsConverter.convertToPOJO(statement.executeQuery(firstDateQuery)).stream().findFirst();
+            final Optional<EloEntry> last = rsConverter.convertToPOJO(statement.executeQuery(lastDateQuery)).stream().findFirst();
+
+            if (first.isPresent() && last.isPresent()) {
+                return first.get().getElo() - last.get().getElo();
+            }
+            return Double.MAX_VALUE;
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+        }
+    }
+
     public Set<EloEntry> getBestAllTime(final Statement statement, final Integer limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry ORDER BY elo DESC LIMIT %d", limit);
         try {
@@ -30,7 +52,7 @@ public class EloDAO {
     }
 
     public Set<EloEntry> getBestForDate(final Statement statement, final Date date, final Optional<Integer> limit) {
-        String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s' ORDER BY elo DESC", date, date);
+        String sqlQuery = String.format(DATE_QUERY + " ORDER BY elo DESC", date, date);
         if (limit.isPresent()) {
             sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));
         }

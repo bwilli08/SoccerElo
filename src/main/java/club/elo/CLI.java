@@ -9,10 +9,8 @@ import lombok.AllArgsConstructor;
 
 import java.sql.Date;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 
 /**
  * Created by Brent Williams on 3/22/2017.
@@ -31,7 +29,8 @@ public class CLI {
         String status = "continue";
         String command, team;
         Integer limit;
-        Date date;
+        Double change;
+        Date date, secondDate;
         Set<EloEntry> entries;
         Optional<EloEntry> entry;
 
@@ -102,6 +101,22 @@ public class CLI {
                             .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
                             .forEach(e -> System.out.println(e));
                     break;
+                case "change":
+                    team = input.nextLine();
+                    try {
+                        date = Date.valueOf(input.nextLine());
+                        secondDate = plusMonth(date);
+                        change = dao.changeBetween(statement, team, date, secondDate);
+
+                        if (!change.equals(Double.MAX_VALUE)) {
+                            System.out.println(String.format("%s changed %s from %s to %s.", team, change, date.toString(), secondDate.toString()));
+                        } else {
+                            System.out.println("Something bad happened.");
+                        }
+                    } catch (IllegalArgumentException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
                 case "quit":
                     status = "quit";
                     break;
@@ -124,5 +139,12 @@ public class CLI {
         System.out.println(" -- obtain the Team with the highest elo for specified date [date]");
         System.out.println("alltime");
         System.out.println(" -- obtain a list of the N best teams of all time");
+    }
+
+    private Date plusMonth(final Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.MONTH, 1);
+        return new Date(calendar.getTime().getTime());
     }
 }

@@ -6,16 +6,25 @@ All date queries should be of the form DD/MM/YYYY.
 
 List of Queries (Michael)
 5) For Date X, return the top 32 teams
-6) For a given year, return top 32 teams to qualify for UEFA (sort ELOs 
-   recorded at end of August)
 7) Return team X's lowest ever ranking
 8) Return 20 most dominant teams over period of time (find avg elo and sort)
 
 List of Queries (Brent)
 13) For Team X, return biggest upset in its own history (max elo gain)
 14) For Team X, return net difference in ELO for given month (should specify year as well)
-15) For Team X and Date Y, return the rank of the team (Should do more than top 100)
-16) Find top 5 upsets for given year
+
+SELECT *
+FROM ClubEloEntry
+WHERE clubName = 'X' AND startDate <= YYYY-MM+1-01 AND endDate >= YYYY-MM-01
+ORDER BY endDate ASC
+LIMIT 1;
+
+SELECT *
+FROM ClubEloEntry
+WHERE clubName = 'X' AND startDate <= YYYY-MM+1-01 AND endDate >= YYYY-MM-01
+ORDER BY endDate DESC
+LIMIT 1;
+SELECT (lates from view) - (earliest from view)
 
 List of Queries (Dylan)
 1) Receive team X's highest ever ranking
