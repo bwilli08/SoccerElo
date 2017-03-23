@@ -6,12 +6,6 @@ CREATE DATABASE soccerElo DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
 USE soccerElo;
 
-CREATE TABLE Club (
-    name VARCHAR(50) NOT NULL,
-    country VARCHAR(50) NOT NULL,
-    PRIMARY KEY(name, country)
-);
-
 CREATE TABLE ClubEloEntry (
     entryId INT AUTO_INCREMENT,
     rank VARCHAR(10) NOT NULL,

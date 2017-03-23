@@ -1,6 +1,6 @@
 5)
 create view EloWithinDates as
-select E.name, E.elo
+select *
 from ClubEloEntry E
 where [date] >= startDate and [date] <= endDate;
 

@@ -29,7 +29,7 @@ public class CLI {
     public void handle(final Scanner input, final Statement statement) {
         String status = "continue";
         String command, team, month, year;
-        Integer limit;
+        Integer limit, rank;
         Double change;
         Date date, secondDate;
         Set<EloChange> changes;
@@ -54,6 +54,20 @@ public class CLI {
             switch (command) {
                 case "help":
                     printCommands();
+                    break;
+                case "date":
+                    date = Date.valueOf(input.next());
+                    entries = dao.getEntriesForDate(statement, date);
+                    entries.stream()
+                            .sorted((e1, e2) -> e1.getClubName().compareTo(e2.getClubName()))
+                            .forEach(e -> System.out.println(e));
+                    break;
+                case "club":
+                    team = input.next();
+                    entries = dao.getClubEntries(statement, team, Optional.empty());
+                    entries.stream()
+                            .sorted((e1, e2) -> e1.getEndDate().compareTo(e2.getEndDate()))
+                            .forEach(e -> System.out.println(e));
                     break;
                 case "teams":
                     List<String> teams = dao.getLocalTeams(statement);
@@ -174,6 +188,15 @@ public class CLI {
                         System.out.println("Something bad happened.");
                     }
                     break;
+                case "worstrank":
+                    team = input.next();
+                    rank = dao.getTeamLowestRank(statement, team);
+
+                    if (rank.equals(new Integer(-1))) {
+                        System.out.println("No rank found for " + team);
+                    }
+
+                    System.out.println(String.format("%s's lowest rank: %s", team, rank));
                 case "quit":
                     status = "quit";
                     break;
@@ -191,6 +214,10 @@ public class CLI {
         System.out.println(" -- List this message.");
         System.out.println("teams");
         System.out.println(" -- get names of every team in the database");
+        System.out.println("date [Date]");
+        System.out.println(" -- get all entries on [Date]");
+        System.out.println("club [TeamName]");
+        System.out.println(" -- get all entries for [TeamName]");
         System.out.println("currentelo [TeamName]");
         System.out.println(" -- obtain current elo for team [Team Name]");
         System.out.println("maxelo [TeamName]");

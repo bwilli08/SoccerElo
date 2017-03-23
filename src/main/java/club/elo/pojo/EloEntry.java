@@ -20,15 +20,3 @@ public class EloEntry {
     private final Date startDate;
     private final Date endDate;
 }
-/*
-// class reserved for queries that return clubname and country
-public class TeamAndCountry {
-    private final String clubname;
-    private final String country;
-}
-
-// class reserved for queries that return clubname and elo
-public class TeamAndElo {
-    private final String clubname;
-    private final Double elo;
-}*/

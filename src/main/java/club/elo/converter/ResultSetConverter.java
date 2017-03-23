@@ -26,6 +26,20 @@ public class ResultSetConverter {
         return teams;
     }
 
+    public int convertToRank(final ResultSet rs) {
+        int rank = -1;
+
+        try {
+            while (rs.next()) {
+                rank = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
+        }
+
+        return rank;
+    }
+
     public Set<EloChange> convertToEloChanges(final ResultSet rs) {
         Set<EloChange> changes = new HashSet<>();
 

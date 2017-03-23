@@ -21,7 +21,15 @@ import java.util.Set;
 public class EloDAO {
 
     private final ResultSetConverter rsConverter;
-
+    // used for query number 5
+    private static final String TEAMS_ON_DATE = "select * from ClubEloEntry E where '%s' >= E.startDate and '%s' <= E.endDate";
+    private static final String LOW_ELO = "select min(E.elo) as lowElo from (%s) as E order by E.elo desc limit 32";
+    // used for query number 7
+    private static final String TEAM_WORST = "SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo ASC LIMIT 1";
+    // used for query number 8
+    private static final String TEAMS_ERA = "select * from ClubEloEntry C where C.startDate >= '%s' and C.endDate <= '%s'";
+    private static final String AVG_ERA = "select T.country, T.name, avg(T.elo) as avgElo from (%s) as T group by T.country, T.name;";
+    private static final String MIN_AVG = "select min(A.avgElo) as minAvg from (%s) as A order by A.avgElo desc limit 20";
     private final static String DATE_QUERY = "SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s'";
     private final static String CLUB_DATE_QUERY = DATE_QUERY + " AND name='%s'";
     private static final String UPSET_QUERY = "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
@@ -29,6 +37,33 @@ public class EloDAO {
             "WHERE E1.entryId!=E2.entryId AND DATEDIFF(e1.startDate, e2.endDate) = 1\n" +
             "ORDER BY eloChange ASC\n" +
             "LIMIT 1;";
+
+    public Set<EloEntry> getEntriesForDate(final Statement statement, final Date date) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format(DATE_QUERY, date, date));
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
+    public int getTeamLowestRank(final Statement statement, final String clubName) {
+        Optional<EloEntry> entry = getMinEloEntry(statement, clubName);
+
+        if (entry.isPresent()) {
+            String sqlQuery = String.format("SELECT (1 + count(*)) from ClubEloEntry where startDate <= '%s' and endDate >= '%s' and elo >= %s", entry.get().getStartDate(), entry.get().getEndDate(), entry.get().getElo());
+            
+            try {
+                ResultSet rs = statement.executeQuery(sqlQuery);
+                return rsConverter.convertToRank(rs);
+            } catch (Exception e) {
+                throw new RuntimeException("Failure querying local database.", e);
+            }
+
+        }
+
+        return -1;
+    }
 
     public Double changeBetween(final Statement statement, final String name, final Date date, final Date secondDate) {
         final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", secondDate, date, name);
