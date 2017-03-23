@@ -9,10 +9,7 @@ import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Methods for accessing the local DB.
@@ -41,6 +38,16 @@ public class EloDAO {
     public Set<EloEntry> getEntriesForDate(final Statement statement, final Date date) {
         try {
             ResultSet rs = statement.executeQuery(String.format(DATE_QUERY, date, date));
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
+    public Set<EloEntry> getTopEntriesForDate(final Statement statement, final Date date) {
+        String sqlQuery = String.format(DATE_QUERY, date, date).concat(" ORDER BY elo DESC LIMIT 32");
+        try {
+            ResultSet rs = statement.executeQuery(sqlQuery);
             return rsConverter.convertToPOJO(rs);
         } catch (Exception e) {
             throw new RuntimeException("Failure querying local database.", e);
@@ -78,7 +85,7 @@ public class EloDAO {
             }
             return Double.MAX_VALUE;
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+            throw new RuntimeException(String.format("Failure querying local database for dates %s and %s.", date, secondDate), e);
         }
     }
 
@@ -143,7 +150,7 @@ public class EloDAO {
 
     public Double yearDifference(final Statement statement, final String name, String year) {
         final String startDate = year + "-01-01";
-        final String nextYear = Integer.toString(Integer.toInt(year) + 1);
+        final String nextYear = Integer.toString(Integer.valueOf(year) + 1);
         final String endDate = nextYear + "-01-01";
 
         final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", endDate, startDate, name);
@@ -158,29 +165,38 @@ public class EloDAO {
             }
             return Double.MAX_VALUE;
         } catch (Exception e) {
-            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+            throw new RuntimeException(String.format("Failure querying local database for year %s.", year), e);
         }
     }
 
-    //INCOMPLETE
-    public List<String> getBestTeamsYearAndMonth(final Statement statement, final String year, final String month) {
-        final String startDate = year + "-" + month + "-" + "01";
+    public Map<String, Double> getBestTeamsYearAndMonth(final Statement statement, final String year, final String month) {
+        Map<String, Double> changeMap = new HashMap<>();
+        final Date startDate = Date.valueOf(year + "-" + month + "-" + "01");
         int monthVal = Integer.parseInt(month);
-        monthVal = (monthVal == 12) ? monthVal = 0 : monthVal = monthVal + 1;
+        monthVal = (monthVal == 12) ? 1 : monthVal + 1;
+        int yearVal = Integer.parseInt(year);
+        yearVal = (monthVal == 1) ? yearVal + 1 : yearVal;
 
-        final String endDate = year + "-" + Integer.toString(month) + "-" + "01";
-        
-        //TODO 
-        //String sqlQuery = String.format(CLUB_DATE_QUERY)
+        final Date endDate = Date.valueOf(yearVal + "-" + monthVal + "-" + "01");
+
+        for (String team : getLocalTeams(statement)) {
+            changeMap.put(team, changeBetween(statement, team, startDate, endDate));
+        }
+
+        return changeMap;
     }
 
-    //INCOMPLETE
-    public List<String> getBestTeamsYear(final Statement statement, final String year) {
-        final String startDate = year + "-01-01";
-        final String nextYear = Integer.toString(Integer.toInt(year) + 1);
-        final String endDate = nextYear + "-01-01";
+    public Map<String, Double> getBestTeamsYear(final Statement statement, final String year) {
+        Map<String, Double> changeMap = new HashMap<>();
+        final Date startDate = Date.valueOf(year + "-01-01");
+        final String nextYear = Integer.toString(Integer.valueOf(year) + 1);
+        final Date endDate = Date.valueOf(nextYear + "-01-01");
 
-        //TODO
+        for (String team : getLocalTeams(statement)) {
+            changeMap.put(team, changeBetween(statement, team, startDate, endDate));
+        }
+
+        return changeMap;
     }
 
     public Set<EloEntry> getClubEntries(final Statement statement, final String clubName, final Optional<Integer> limit) {

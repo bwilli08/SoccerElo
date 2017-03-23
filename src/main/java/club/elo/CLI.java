@@ -35,6 +35,7 @@ public class CLI {
         Set<EloChange> changes;
         Set<EloEntry> entries;
         Optional<EloEntry> entry;
+        Map<String, Double> bestTeams;
 
         // Ask user if he/she wants to update database
         System.out.println("Would you like to update your local database to contain current statistics?");
@@ -77,6 +78,12 @@ public class CLI {
                         System.out.print(String.format("%s ", teams.get(x)));
                     }
                     break;
+                case "top32":
+                    date = Date.valueOf(input.next());
+                    entries = dao.getTopEntriesForDate(statement, date);
+                    entries.stream()
+                            .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
+                            .forEach(e -> System.out.println(String.format("%12s - Elo %s - Country %s", e.getClubName(), e.getElo(), e.getCountry())));
                 case "currentelo":
                     team = input.next();
                     entry = dao.getClubEntries(statement, team, Optional.of(1)).stream().findFirst();
@@ -154,28 +161,24 @@ public class CLI {
                 case "topduringmonthyear":
                     year = input.next();
                     month = input.next();
-                    List<String> bestTeams = dao.getBestTeamsYearAndMonth(statement, year, month);
+                    bestTeams = dao.getBestTeamsYearAndMonth(statement, year, month);
                     if (bestTeams.size() == 0) {
                         System.out.println("Something bad happened.");
                     } else {
-                        for (int x = 0; x < teams.size(); x++) {
-                            if (x % 10 == 0)
-                                System.out.println();
-                            System.out.print(String.format("%s ", teams.get(x)));
-                        }
+                        bestTeams.entrySet().stream()
+                                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                                .forEach(e -> System.out.println(String.format("%s - Elo %s", e.getKey(), e.getValue())));
                     }
                     break;
                 case "topduringyear":
                     year = input.next();
-                    List<String> bestTeams = dao.getBestTeamsYear(statement, year);
+                    bestTeams = dao.getBestTeamsYear(statement, year);
                     if (bestTeams.size() == 0) {
                         System.out.println("Something bad happened.");
                     } else {
-                        for (int x = 0; x < teams.size(); x++) {
-                            if (x % 10 == 0)
-                                System.out.println();
-                            System.out.print(String.format("%s ", teams.get(x)));
-                        }
+                        bestTeams.entrySet().stream()
+                                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                                .forEach(e -> System.out.println(String.format("%s - Elo %s", e.getKey(), e.getValue())));
                     }
                     break;
                 case "changeduring":
@@ -218,6 +221,8 @@ public class CLI {
         System.out.println(" -- get all entries on [Date]");
         System.out.println("club [TeamName]");
         System.out.println(" -- get all entries for [TeamName]");
+        System.out.println("top32 [Date]");
+        System.out.println(" -- get top 32 teams on [Date], ordered by elo");
         System.out.println("currentelo [TeamName]");
         System.out.println(" -- obtain current elo for team [Team Name]");
         System.out.println("maxelo [TeamName]");
