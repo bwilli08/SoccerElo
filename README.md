@@ -21,7 +21,7 @@ List of Queries (Vihari)
 11) Find top 20 upsets in history (top 20 largest ELO gains over one game)
 	Not worth it, unless you want the query to take a few hours.
 12) For Team X, return net difference in ELO for given year
-	E Z P Z (see 9 and 10)
+	DONE
 
 
 NOTE: ROOM FOR EXPANSION

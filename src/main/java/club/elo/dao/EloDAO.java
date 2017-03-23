@@ -106,6 +106,48 @@ public class EloDAO {
         }
     }
 
+    public Double yearDifference(final Statement statement, final String name, String year) {
+        final String startDate = year + "-01-01";
+        final String nextYear = Integer.toString(Integer.toInt(year) + 1);
+        final String endDate = nextYear + "-01-01";
+
+        final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", endDate, startDate, name);
+        final String lastDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate DESC LIMIT 1", endDate, startDate, name);
+
+        try {
+            final Optional<EloEntry> first = rsConverter.convertToPOJO(statement.executeQuery(firstDateQuery)).stream().findFirst();
+            final Optional<EloEntry> last = rsConverter.convertToPOJO(statement.executeQuery(lastDateQuery)).stream().findFirst();
+
+            if (first.isPresent() && last.isPresent()) {
+                return first.get().getElo() - last.get().getElo();
+            }
+            return Double.MAX_VALUE;
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+        }
+    }
+
+    //INCOMPLETE
+    public List<String> getBestTeamsYearAndMonth(final Statement statement, final String year, final String month) {
+        final String startDate = year + "-" + month + "-" + "01";
+        int monthVal = Integer.parseInt(month);
+        monthVal = (monthVal == 12) ? monthVal = 0 : monthVal = monthVal + 1;
+
+        final String endDate = year + "-" + Integer.toString(month) + "-" + "01";
+        
+        //TODO 
+        //String sqlQuery = String.format(CLUB_DATE_QUERY)
+    }
+
+    //INCOMPLETE
+    public List<String> getBestTeamsYear(final Statement statement, final String year) {
+        final String startDate = year + "-01-01";
+        final String nextYear = Integer.toString(Integer.toInt(year) + 1);
+        final String endDate = nextYear + "-01-01";
+
+        //TODO
+    }
+
     public Set<EloEntry> getClubEntries(final Statement statement, final String clubName, final Optional<Integer> limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY startDate DESC", clubName);
         if (limit.isPresent()) {

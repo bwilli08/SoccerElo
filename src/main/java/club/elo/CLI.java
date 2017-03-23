@@ -28,7 +28,7 @@ public class CLI {
 
     public void handle(final Scanner input, final Statement statement) {
         String status = "continue";
-        String command, team;
+        String command, team, month, year;
         Integer limit;
         Double change;
         Date date, secondDate;
@@ -137,6 +137,43 @@ public class CLI {
                         System.out.println(String.format("%s's biggest upset: %s elo loss on %s", team, eChange.getChange(), eChange.getDate()));
                     }
                     break;
+                case "topduringmonthyear":
+                    year = input.next();
+                    month = input.next();
+                    List<String> bestTeams = dao.getBestTeamsYearAndMonth(statement, year, month);
+                    if (bestTeams.size() == 0) {
+                        System.out.println("Something bad happened.");
+                    } else {
+                        for (int x = 0; x < teams.size(); x++) {
+                            if (x % 10 == 0)
+                                System.out.println();
+                            System.out.print(String.format("%s ", teams.get(x)));
+                        }
+                    }
+                    break;
+                case "topduringyear":
+                    year = input.next();
+                    List<String> bestTeams = dao.getBestTeamsYear(statement, year);
+                    if (bestTeams.size() == 0) {
+                        System.out.println("Something bad happened.");
+                    } else {
+                        for (int x = 0; x < teams.size(); x++) {
+                            if (x % 10 == 0)
+                                System.out.println();
+                            System.out.print(String.format("%s ", teams.get(x)));
+                        }
+                    }
+                    break;
+                case "changeduring":
+                    team = input.next();
+                    year = input.next();
+                    change = dao.yearDifference(statement, team, year);
+                    if (!change.equals(Double.MAX_VALUE)) {
+                        System.out.println(String.format("%s changed %s during the year %s.", team, change, year));
+                    } else {
+                        System.out.println("Something bad happened.");
+                    }
+                    break;
                 case "quit":
                     status = "quit";
                     break;
@@ -168,6 +205,12 @@ public class CLI {
         System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
         System.out.println("upset [TeamName]");
         System.out.println(" -- return [TeamName]'s biggest loss of elo (WARNING: This takes a long time!)");
+        System.out.println("topduringmonthyear [Year][Month]");
+        System.out.println(" -- return the top 20 teams determined by elo growth during the year [YYYY] and month [MM] provided");
+        System.out.println("topduringyear [Year]");
+        System.out.println(" -- return the top 20 teams determined by elo growth during the year [YYYY] provided");
+        System.out.println("changeduring [TeamName][Year]");
+        System.out.println(" -- return the net elo change for [TeamName] for the [Year] specified");
         System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
     }
 
