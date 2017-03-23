@@ -12,18 +12,16 @@ List of Queries (Michael)
 List of Queries (Brent)
 Done.
 
-List of Queries (Dylan)
-1) Receive team X's highest ever ranking
-2) For Date X, return a list of all the teams and their ELO (highest ELO first)
-3) Get a list of all the teams (alphabetical)
-4) For (Team X1, Date X2) and (Team Y1, Date Y2), predict who will win the match (would require simulation, probably not)
-
 List of Queries (Vihari)
 9) Given Month and Year, return top 20 teams based off ELO gained over month
+	Already have a GetChangeOverTime query, just use it to group by team, order by elo change and limit to 20
 10) Given Year, return top 20 teams based off ELO gained over year (year starts
     in July 1st)
+	Similar to above, could use GetChangeOverTime, group, order, and limit
 11) Find top 20 upsets in history (top 20 largest ELO gains over one game)
+	Not worth it, unless you want the query to take a few hours.
 12) For Team X, return net difference in ELO for given year
+	E Z P Z (see 9 and 10)
 
 
 NOTE: ROOM FOR EXPANSION
