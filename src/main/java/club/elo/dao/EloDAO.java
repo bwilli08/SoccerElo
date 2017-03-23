@@ -1,6 +1,7 @@
 package club.elo.dao;
 
 import club.elo.converter.ResultSetConverter;
+import club.elo.pojo.EloChange;
 import club.elo.pojo.EloEntry;
 import lombok.AllArgsConstructor;
 
@@ -23,6 +24,11 @@ public class EloDAO {
 
     private final static String DATE_QUERY = "SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s'";
     private final static String CLUB_DATE_QUERY = DATE_QUERY + " AND name='%s'";
+    private static final String UPSET_QUERY = "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
+            "FROM (SELECT * FROM ClubEloEntry WHERE name='%s') as E1, (SELECT * FROM ClubEloEntry WHERE name='%s') as E2\n" +
+            "WHERE E1.entryId!=E2.entryId AND DATEDIFF(e1.startDate, e2.endDate) = 1\n" +
+            "ORDER BY eloChange ASC\n" +
+            "LIMIT 1;";
 
     public Double changeBetween(final Statement statement, final String name, final Date date, final Date secondDate) {
         final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", secondDate, date, name);
@@ -38,6 +44,15 @@ public class EloDAO {
             return Double.MAX_VALUE;
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for date %s.", date), e);
+        }
+    }
+
+    public Set<EloChange> getBiggestUpset(final Statement statement, final String clubName) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format(UPSET_QUERY, clubName, clubName));
+            return rsConverter.convertToEloChanges(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
         }
     }
 

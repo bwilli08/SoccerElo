@@ -3,6 +3,7 @@ package club.elo;
 import club.elo.converter.ClubEloConverter;
 import club.elo.converter.ResultSetConverter;
 import club.elo.dao.EloDAO;
+import club.elo.pojo.EloChange;
 import club.elo.pojo.EloEntry;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,7 @@ public class CLI {
         Integer limit;
         Double change;
         Date date, secondDate;
+        Set<EloChange> changes;
         Set<EloEntry> entries;
         Optional<EloEntry> entry;
 
@@ -125,6 +127,16 @@ public class CLI {
                         System.out.println(e.getMessage());
                     }
                     break;
+                case "upset":
+                    team = input.next();
+                    changes = dao.getBiggestUpset(statement, team);
+                    if (changes.isEmpty()) {
+                        System.out.println("Something bad happened.");
+                    } else {
+                        EloChange eChange = changes.stream().findFirst().get();
+                        System.out.println(String.format("%s's biggest upset: %s elo loss on %s", team, eChange.getChange(), eChange.getDate()));
+                    }
+                    break;
                 case "quit":
                     status = "quit";
                     break;
@@ -154,6 +166,8 @@ public class CLI {
         System.out.println(" -- obtain a list of the N best teams of all time");
         System.out.println("change [TeamName] [Date1] [Date2]");
         System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
+        System.out.println("upset [TeamName]");
+        System.out.println(" -- return [TeamName]'s biggest loss of elo (WARNING: This takes a long time!)");
         System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
     }
 

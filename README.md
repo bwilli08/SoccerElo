@@ -10,7 +10,7 @@ List of Queries (Michael)
 8) Return 20 most dominant teams over period of time (find avg elo and sort)
 
 List of Queries (Brent)
-13) For Team X, return biggest upset in its own history (max elo gain)
+Done.
 
 List of Queries (Dylan)
 1) Receive team X's highest ever ranking
