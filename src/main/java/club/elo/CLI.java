@@ -29,7 +29,7 @@ public class CLI {
     public void handle(final Scanner input, final Statement statement) {
         String status = "continue";
         String command, team;
-        Integer limit;
+        Integer limit, rank;
         Double change;
         Date date, secondDate;
         Set<EloChange> changes;
@@ -137,6 +137,15 @@ public class CLI {
                         System.out.println(String.format("%s's biggest upset: %s elo loss on %s", team, eChange.getChange(), eChange.getDate()));
                     }
                     break;
+                case "worstrank":
+                    team = input.next();
+                    rank = dao.getTeamLowestRank(statement, team);
+
+                    if (rank.equals(new Integer(-1))) {
+                        System.out.println("No rank found for " + team);
+                    }
+
+                    System.out.println(String.format("%s's lowest rank: %s", team, rank));
                 case "quit":
                     status = "quit";
                     break;

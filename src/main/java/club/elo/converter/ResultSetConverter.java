@@ -27,11 +27,11 @@ public class ResultSetConverter {
     }
 
     public int convertToRank(final ResultSet rs) {
-        int rank;
+        int rank = -1;
 
         try {
             while (rs.next()) {
-                rank = rs.getInt(2);
+                rank = rs.getInt(1);
             }
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
