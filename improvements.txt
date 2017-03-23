@@ -1,0 +1,17 @@
+ADDITIONAL TABLES
+EloChanges - An EloChanges table should exist, keeping track of team name, date of change, and amount.
+	This is so that any elo change query doesn't have to perform a cross product of the
+	ClubEloEntry table with itself (1.2 million * 1.2 million = a lot). Even when narrowing
+	the cross product to a specific team, this ends up (on average) creating a table with
+	4 million entries.
+
+DATABASE HOST
+If we're going to host on a local machine, make sure that it isn't crazy slow, or better
+yet, don't host the DB on a local machine. Cloud desktops or servers would be perfect
+for this scenario due to the sheer amount of data being processed. Regular laptops can
+NOT, I repeat CAN NOT, handle 1.2 million entry tables with any amount of speed.
+
+TRIGGERS
+Use triggers to delete out of date records and to update the EloChange table. This would
+move the Database management code out of the application, as it should be. Reason for not
+doing this: The tables were created and populated before we knew what a trigger was.
