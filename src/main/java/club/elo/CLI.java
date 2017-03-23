@@ -46,14 +46,13 @@ public class CLI {
 
         // TODO: Command line interface for user interaction and queries to the DB.
         while (status.equals("continue")) {
-            System.out.println("Choose the type of transaction");
-            System.out.println("--type [help] to view list of commands");
-            System.out.println("[Quit]: End program");
+            System.out.println("Enter your transaction (type help for command info):");
 
-            command = input.nextLine().toLowerCase();
+            command = input.next().toLowerCase();
             switch (command) {
                 case "help":
                     printCommands();
+                    break;
                 case "teams":
                     List<String> teams = dao.getLocalTeams(statement);
                     for (int x = 0; x < teams.size(); x++) {
@@ -63,8 +62,8 @@ public class CLI {
                     }
                     break;
                 case "currentelo":
-                    team = input.nextLine();
-                    entry = dao.getLocalClubEntry(statement, team, Optional.of(1)).stream().findFirst();
+                    team = input.next();
+                    entry = dao.getClubEntries(statement, team, Optional.of(1)).stream().findFirst();
                     if (entry.isPresent()) {
                         System.out.println(String.format("Current Elo of %s: %s", team, entry.get().getElo()));
                     } else {
@@ -72,10 +71,19 @@ public class CLI {
                     }
                     break;
                 case "maxelo":
-                    team = input.nextLine();
-                    entry = dao.getMaxEloEntry(statement, team).stream().findFirst();
+                    team = input.next();
+                    entry = dao.getMaxEloEntry(statement, team);
                     if (entry.isPresent()) {
                         System.out.println(String.format("Max Elo of %s: %s from %s to %s", team, entry.get().getElo(), entry.get().getStartDate(), entry.get().getEndDate()));
+                    } else {
+                        System.out.println(String.format("Team %s not found in database.", team));
+                    }
+                    break;
+                case "minelo":
+                    team = input.next();
+                    entry = dao.getMinEloEntry(statement, team);
+                    if (entry.isPresent()) {
+                        System.out.println(String.format("Min Elo of %s: %s from %s to %s", team, entry.get().getElo(), entry.get().getStartDate(), entry.get().getEndDate()));
                     } else {
                         System.out.println(String.format("Team %s not found in database.", team));
                     }
@@ -83,7 +91,7 @@ public class CLI {
                 case "best":
                     // Needs to be in YYYY-MM-DD format
                     try {
-                        date = Date.valueOf(input.nextLine());
+                        date = Date.valueOf(input.next());
                         entry = dao.getBestForDate(statement, date, Optional.of(1)).stream().findFirst();
                         if (entry.isPresent()) {
                             System.out.println(String.format("Max Elo on %s: %s with an elo of %s", date, entry.get().getClubName(), entry.get().getElo()));
@@ -95,17 +103,17 @@ public class CLI {
                     }
                     break;
                 case "alltime":
-                    limit = Integer.valueOf(input.nextLine());
+                    limit = input.nextInt();
                     entries = dao.getBestAllTime(statement, limit);
                     entries.stream()
                             .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
                             .forEach(e -> System.out.println(e));
                     break;
                 case "change":
-                    team = input.nextLine();
+                    team = input.next();
                     try {
-                        date = Date.valueOf(input.nextLine());
-                        secondDate = plusMonth(date);
+                        date = Date.valueOf(input.next());
+                        secondDate = Date.valueOf(input.next());
                         change = dao.changeBetween(statement, team, date, secondDate);
 
                         if (!change.equals(Double.MAX_VALUE)) {
@@ -124,21 +132,29 @@ public class CLI {
                     System.out.println(String.format("[%s] is an unknown command", command));
                     break;
             }
+            input.nextLine();
             System.out.println();
         }
     }
 
     private void printCommands() {
+        System.out.println("help");
+        System.out.println(" -- List these queries.");
         System.out.println("teams");
         System.out.println(" -- get names of every team in Europe");
-        System.out.println("currentelo");
+        System.out.println("currentelo [TeamName]");
         System.out.println(" -- obtain current elo for team [Team Name]");
-        System.out.println("maxelo");
+        System.out.println("maxelo [TeamName]");
         System.out.println(" -- obtain the highest ELO in history for team [Team Name]");
-        System.out.println("best");
+        System.out.println("minelo [TeamName]");
+        System.out.println(" -- obtain the lowest ELO in history for team [Team Name]");
+        System.out.println("best [Date]");
         System.out.println(" -- obtain the Team with the highest elo for specified date [date]");
-        System.out.println("alltime");
+        System.out.println("alltime [NumTeams]");
         System.out.println(" -- obtain a list of the N best teams of all time");
+        System.out.println("change [TeamName] [Date1] [Date2]");
+        System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
+        System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD).");
     }
 
     private Date plusMonth(final Date date) {
