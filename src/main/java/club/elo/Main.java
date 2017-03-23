@@ -16,7 +16,7 @@ public class Main {
     // TODO: Create object that contains methods for various DB queries
     private static final String JDB_URL = "jdbc:mysql://localhost:3306/soccerElo?rewriteBatchedStatements=true";
 
-    private void printCommands() {
+    private static void printCommands() {
         System.out.println("teams");
         System.out.println(" -- get names of every team in Europe");
         System.out.println("currentelo");
