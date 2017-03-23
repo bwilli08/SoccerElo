@@ -200,6 +200,7 @@ public class CLI {
                     }
 
                     System.out.println(String.format("%s's lowest rank: %s", team, rank));
+                    break;
                 case "quit":
                     status = "quit";
                     break;

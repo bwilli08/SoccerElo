@@ -48,7 +48,7 @@ public class EloDAO {
     private static final String UPSET_QUERY =
             "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
             "FROM (SELECT * FROM ClubEloEntry WHERE name='%s') as E1, (SELECT * FROM ClubEloEntry WHERE name='%s') as E2\n" +
-            "WHERE E1.entryId!=E2.entryId AND DATEDIFF(e1.startDate, e2.endDate) = 1\n" +
+            "WHERE E1.entryId!=E2.entryId AND DATEDIFF(E1.startDate, E2.endDate) = 1\n" +
             "ORDER BY eloChange ASC\n" +
             "LIMIT 1;";
 
