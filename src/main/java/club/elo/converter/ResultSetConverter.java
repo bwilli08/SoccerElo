@@ -24,21 +24,17 @@ public class ResultSetConverter {
 
         return teams;
     }
-/*
-    // Create conversion methods for various objects defined in pojo pkg
-    public List<TeamAndCountry> convertToTeamAndCountry(final ResultSet rs) {
-        List<TeamAndCountry> teams = new ArrayList<>();
+
+    public int convertToRank(final ResultSet rs) {
+        int rank;
 
         try {
-            while (rs.next()) {
-                TeamAndCountry.Builder builder = TeamAndCountry.builder();
-
-                builder.clubName(String.class.cast(rs.getObject(ndx++)));
-                
-            }
+            rank = rs.getInt(2);
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
         }
     }
-*/
+
     public Set<EloEntry> convertToPOJO(final ResultSet rs) {
         Set<EloEntry> entries = new HashSet<>();
 
