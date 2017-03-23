@@ -59,6 +59,20 @@ public class ResultSetConverter {
         return changes;
     }
 
+    public Map<String, Double> convertToEloMap(final ResultSet rs) {
+        HashMap<String, Double> map = new HashMap<>();
+
+        try {
+            while (rs.next()) {
+                map.put(rs.getString(1), rs.getDouble(2));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failure converting result set to local entry."), e);
+        }
+
+        return map;
+    }
+
     public Set<EloEntry> convertToPOJO(final ResultSet rs) {
         Set<EloEntry> entries = new HashSet<>();
 

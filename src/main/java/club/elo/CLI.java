@@ -61,14 +61,14 @@ public class CLI {
                     entries = dao.getEntriesForDate(statement, date);
                     entries.stream()
                             .sorted((e1, e2) -> e1.getClubName().compareTo(e2.getClubName()))
-                            .forEach(e -> System.out.println(e));
+                            .forEach(e -> System.out.println(String.format("%20s - Country %s - Elo %s", e.getClubName(), e.getCountry(), e.getElo())));
                     break;
                 case "club":
                     team = input.next();
                     entries = dao.getClubEntries(statement, team, Optional.empty());
                     entries.stream()
                             .sorted((e1, e2) -> e1.getEndDate().compareTo(e2.getEndDate()))
-                            .forEach(e -> System.out.println(e));
+                            .forEach(e -> System.out.println(String.format("From %s to %s - %s", e.getStartDate(), e.getEndDate(), e.getElo())));
                     break;
                 case "teams":
                     List<String> teams = dao.getLocalTeams(statement);
@@ -84,6 +84,7 @@ public class CLI {
                     entries.stream()
                             .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
                             .forEach(e -> System.out.println(String.format("%12s - Elo %s - Country %s", e.getClubName(), e.getElo(), e.getCountry())));
+                    break;
                 case "currentelo":
                     team = input.next();
                     entry = dao.getClubEntries(statement, team, Optional.of(1)).stream().findFirst();
@@ -112,7 +113,6 @@ public class CLI {
                     }
                     break;
                 case "best":
-                    // Needs to be in YYYY-MM-DD format
                     try {
                         date = Date.valueOf(input.next());
                         entry = dao.getBestForDate(statement, date, Optional.of(1)).stream().findFirst();
@@ -127,10 +127,10 @@ public class CLI {
                     break;
                 case "alltime":
                     limit = input.nextInt();
-                    entries = dao.getBestAllTime(statement, limit);
-                    entries.stream()
-                            .sorted((e1, e2) -> e2.getElo().compareTo(e1.getElo()))
-                            .forEach(e -> System.out.println(e));
+                    bestTeams = dao.getBestAllTime(statement, limit);
+                    bestTeams.entrySet().stream()
+                            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
+                            .forEach(e -> System.out.println(String.format("%15s - Elo %s", e.getKey(), e.getValue())));
                     break;
                 case "change":
                     team = input.next();
@@ -236,7 +236,7 @@ public class CLI {
         System.out.println("change [TeamName] [Date1] [Date2]");
         System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
         System.out.println("upset [TeamName]");
-        System.out.println(" -- return [TeamName]'s biggest loss of elo (WARNING: This takes a long time!)");
+        System.out.println(" -- (WARNING: This takes a long time!) return [TeamName]'s biggest loss of elo");
         System.out.println("topduringmonthyear [Year][Month]");
         System.out.println(" -- return the top 20 teams determined by elo growth during the year [YYYY] and month [MM] provided");
         System.out.println("topduringyear [Year]");
@@ -244,12 +244,5 @@ public class CLI {
         System.out.println("changeduring [TeamName][Year]");
         System.out.println(" -- return the net elo change for [TeamName] for the [Year] specified");
         System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
-    }
-
-    private Date plusMonth(final Date date) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.MONTH, 1);
-        return new Date(calendar.getTime().getTime());
     }
 }

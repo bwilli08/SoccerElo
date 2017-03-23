@@ -18,18 +18,35 @@ import java.util.*;
 public class EloDAO {
 
     private final ResultSetConverter rsConverter;
-    // used for query number 5
-    private static final String TEAMS_ON_DATE = "select * from ClubEloEntry E where '%s' >= E.startDate and '%s' <= E.endDate";
-    private static final String LOW_ELO = "select min(E.elo) as lowElo from (%s) as E order by E.elo desc limit 32";
-    // used for query number 7
-    private static final String TEAM_WORST = "SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo ASC LIMIT 1";
-    // used for query number 8
-    private static final String TEAMS_ERA = "select * from ClubEloEntry C where C.startDate >= '%s' and C.endDate <= '%s'";
-    private static final String AVG_ERA = "select T.country, T.name, avg(T.elo) as avgElo from (%s) as T group by T.country, T.name;";
-    private static final String MIN_AVG = "select min(A.avgElo) as minAvg from (%s) as A order by A.avgElo desc limit 20";
-    private final static String DATE_QUERY = "SELECT * FROM ClubEloEntry WHERE startDate<='%s' AND endDate>='%s'";
-    private final static String CLUB_DATE_QUERY = DATE_QUERY + " AND name='%s'";
-    private static final String UPSET_QUERY = "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
+
+    private static final String CLUB_QUERY =
+            "SELECT *\n" +
+            "FROM ClubEloEntry\n" +
+            "WHERE name='%s'";
+    private static final String ALL_TIME_QUERY =
+            "SELECT name, MAX(elo) as maxElo\n" +
+            "FROM ClubEloEntry\n" +
+            "GROUP BY name\n" +
+            "ORDER BY maxElo DESC\n" +
+            "LIMIT %s";
+    private static final String FIRST_ELO_IN_RANGE =
+            "SELECT elo\n" +
+            "FROM ClubEloEntry\n" +
+            "WHERE name='%s' AND startDate<='%s' AND endDate>='%s'\n" +
+            "ORDER BY endDate ASC\n" +
+            "LIMIT 1";
+    private static final String LAST_ELO_IN_RANGE =
+            "SELECT elo\n" +
+            "FROM ClubEloEntry\n" +
+            "WHERE name='%s' AND startDate<='%s' AND endDate>='%s'\n" +
+            "ORDER BY endDate DESC\n" +
+            "LIMIT 1";
+    private final static String DATE_QUERY =
+            "SELECT *\n" +
+            "FROM ClubEloEntry\n" +
+            "WHERE startDate<='%s' AND endDate>='%s'";
+    private static final String UPSET_QUERY =
+            "SELECT E1.name, E2.endDate, (E1.elo - E2.elo) as eloChange\n" +
             "FROM (SELECT * FROM ClubEloEntry WHERE name='%s') as E1, (SELECT * FROM ClubEloEntry WHERE name='%s') as E2\n" +
             "WHERE E1.entryId!=E2.entryId AND DATEDIFF(e1.startDate, e2.endDate) = 1\n" +
             "ORDER BY eloChange ASC\n" +
@@ -73,17 +90,13 @@ public class EloDAO {
     }
 
     public Double changeBetween(final Statement statement, final String name, final Date date, final Date secondDate) {
-        final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", secondDate, date, name);
-        final String lastDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate DESC LIMIT 1", secondDate, date, name);
+        final String firstEloQuery = String.format(FIRST_ELO_IN_RANGE, name, secondDate, date);
+        final String lastEloQuery = String.format(LAST_ELO_IN_RANGE, name, secondDate, date);
+        final String changeQuery = String.format("SELECT ((%s) - (%s))", firstEloQuery, lastEloQuery);
 
         try {
-            final Optional<EloEntry> first = rsConverter.convertToPOJO(statement.executeQuery(firstDateQuery)).stream().findFirst();
-            final Optional<EloEntry> last = rsConverter.convertToPOJO(statement.executeQuery(lastDateQuery)).stream().findFirst();
-
-            if (first.isPresent() && last.isPresent()) {
-                return first.get().getElo() - last.get().getElo();
-            }
-            return Double.MAX_VALUE;
+            ResultSet rs = statement.executeQuery(changeQuery);
+            return rs.next() ? rs.getDouble(1) : Double.MAX_VALUE;
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for dates %s and %s.", date, secondDate), e);
         }
@@ -98,11 +111,11 @@ public class EloDAO {
         }
     }
 
-    public Set<EloEntry> getBestAllTime(final Statement statement, final Integer limit) {
-        String sqlQuery = String.format("SELECT * FROM ClubEloEntry ORDER BY elo DESC LIMIT %d", limit);
+    public Map<String, Double> getBestAllTime(final Statement statement, final Integer limit) {
+        String sqlQuery = String.format(ALL_TIME_QUERY, limit);
         try {
             ResultSet rs = statement.executeQuery(sqlQuery);
-            return rsConverter.convertToPOJO(rs);
+            return rsConverter.convertToEloMap(rs);
         } catch (Exception e) {
             throw new RuntimeException("Failure querying local database.", e);
         }
@@ -123,7 +136,7 @@ public class EloDAO {
 
     public Optional<EloEntry> getMaxEloEntry(final Statement statement, final String clubName) {
         try {
-            ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo DESC LIMIT 1", clubName));
+            ResultSet rs = statement.executeQuery(String.format(CLUB_QUERY + " ORDER BY elo DESC LIMIT 1", clubName));
             return rsConverter.convertToPOJO(rs).stream().findFirst();
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
@@ -132,7 +145,7 @@ public class EloDAO {
 
     public Optional<EloEntry> getMinEloEntry(final Statement statement, final String clubName) {
         try {
-            ResultSet rs = statement.executeQuery(String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo ASC LIMIT 1", clubName));
+            ResultSet rs = statement.executeQuery(String.format(CLUB_QUERY + " ORDER BY elo ASC LIMIT 1", clubName));
             return rsConverter.convertToPOJO(rs).stream().findFirst();
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failure querying local database for %s.", clubName), e);
@@ -141,7 +154,7 @@ public class EloDAO {
 
     public List<String> getLocalTeams(final Statement statement) {
         try {
-            ResultSet rs = statement.executeQuery("SELECT DISTINCT name FROM ClubEloEntry ORDER BY name ASC");
+            ResultSet rs = statement.executeQuery("SELECT DISTINCT name FROM ClubEloEntry GROUP BY name ORDER BY name ASC");
             return rsConverter.convertToTeamNames(rs);
         } catch (Exception e) {
             throw new RuntimeException("Failure querying local database for local teams.", e);
@@ -149,35 +162,16 @@ public class EloDAO {
     }
 
     public Double yearDifference(final Statement statement, final String name, String year) {
-        final String startDate = year + "-01-01";
-        final String nextYear = Integer.toString(Integer.valueOf(year) + 1);
-        final String endDate = nextYear + "-01-01";
+        final Date startDate = Date.valueOf(year + "-01-01");
+        final Date endDate = plusYear(startDate);
 
-        final String firstDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate ASC LIMIT 1", endDate, startDate, name);
-        final String lastDateQuery = String.format(CLUB_DATE_QUERY + " ORDER BY endDate DESC LIMIT 1", endDate, startDate, name);
-
-        try {
-            final Optional<EloEntry> first = rsConverter.convertToPOJO(statement.executeQuery(firstDateQuery)).stream().findFirst();
-            final Optional<EloEntry> last = rsConverter.convertToPOJO(statement.executeQuery(lastDateQuery)).stream().findFirst();
-
-            if (first.isPresent() && last.isPresent()) {
-                return first.get().getElo() - last.get().getElo();
-            }
-            return Double.MAX_VALUE;
-        } catch (Exception e) {
-            throw new RuntimeException(String.format("Failure querying local database for year %s.", year), e);
-        }
+        return changeBetween(statement, name, startDate, endDate);
     }
 
     public Map<String, Double> getBestTeamsYearAndMonth(final Statement statement, final String year, final String month) {
         Map<String, Double> changeMap = new HashMap<>();
         final Date startDate = Date.valueOf(year + "-" + month + "-" + "01");
-        int monthVal = Integer.parseInt(month);
-        monthVal = (monthVal == 12) ? 1 : monthVal + 1;
-        int yearVal = Integer.parseInt(year);
-        yearVal = (monthVal == 1) ? yearVal + 1 : yearVal;
-
-        final Date endDate = Date.valueOf(yearVal + "-" + monthVal + "-" + "01");
+        final Date endDate = plusMonth(startDate);
 
         for (String team : getLocalTeams(statement)) {
             changeMap.put(team, changeBetween(statement, team, startDate, endDate));
@@ -189,8 +183,7 @@ public class EloDAO {
     public Map<String, Double> getBestTeamsYear(final Statement statement, final String year) {
         Map<String, Double> changeMap = new HashMap<>();
         final Date startDate = Date.valueOf(year + "-01-01");
-        final String nextYear = Integer.toString(Integer.valueOf(year) + 1);
-        final Date endDate = Date.valueOf(nextYear + "-01-01");
+        final Date endDate = plusYear(startDate);
 
         for (String team : getLocalTeams(statement)) {
             changeMap.put(team, changeBetween(statement, team, startDate, endDate));
@@ -200,7 +193,7 @@ public class EloDAO {
     }
 
     public Set<EloEntry> getClubEntries(final Statement statement, final String clubName, final Optional<Integer> limit) {
-        String sqlQuery = String.format("SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY startDate DESC", clubName);
+        String sqlQuery = String.format(CLUB_QUERY + " ORDER BY startDate DESC", clubName);
         if (limit.isPresent()) {
             sqlQuery = sqlQuery.concat(String.format(" LIMIT %d", limit.get()));
         }
@@ -239,5 +232,19 @@ public class EloDAO {
         } catch (Exception e) {
             throw new RuntimeException("Batch execution failed.", e);
         }
+    }
+
+    private Date plusYear(final Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.YEAR, 1);
+        return new Date(calendar.getTime().getTime());
+    }
+
+    private Date plusMonth(final Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.MONTH, 1);
+        return new Date(calendar.getTime().getTime());
     }
 }
