@@ -139,9 +139,9 @@ public class CLI {
 
     private void printCommands() {
         System.out.println("help");
-        System.out.println(" -- List these queries.");
+        System.out.println(" -- List this message.");
         System.out.println("teams");
-        System.out.println(" -- get names of every team in Europe");
+        System.out.println(" -- get names of every team in the database");
         System.out.println("currentelo [TeamName]");
         System.out.println(" -- obtain current elo for team [Team Name]");
         System.out.println("maxelo [TeamName]");
@@ -154,7 +154,7 @@ public class CLI {
         System.out.println(" -- obtain a list of the N best teams of all time");
         System.out.println("change [TeamName] [Date1] [Date2]");
         System.out.println(" -- return the net elo change for [TeamName] from [Date1] to [Date2]");
-        System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD).");
+        System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
     }
 
     private Date plusMonth(final Date date) {
