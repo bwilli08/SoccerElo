@@ -38,11 +38,21 @@ public class EloDAO {
             "ORDER BY eloChange ASC\n" +
             "LIMIT 1;";
 
+    public Set<EloEntry> getEntriesForDate(final Statement statement, final Date date) {
+        try {
+            ResultSet rs = statement.executeQuery(String.format(DATE_QUERY, date, date));
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
     public int getTeamLowestRank(final Statement statement, final String clubName) {
         Optional<EloEntry> entry = getMinEloEntry(statement, clubName);
 
         if (entry.isPresent()) {
-            String sqlQuery = String.format("SELECT 1 + count(*) as numBetterTeams from ClubEloEntry where startDate <= '%s' and endDate >= '%s' and elo >= %s", entry.get().getStartDate(), entry.get().getEndDate(), entry.get().getElo());
+            System.out.println(entry.get());
+            String sqlQuery = String.format("SELECT (1 + count(*)) from ClubEloEntry where startDate <= '%s' and endDate >= '%s' and elo >= %s", entry.get().getStartDate(), entry.get().getEndDate(), entry.get().getElo());
             
             try {
                 ResultSet rs = statement.executeQuery(sqlQuery);

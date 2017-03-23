@@ -55,6 +55,11 @@ public class CLI {
                 case "help":
                     printCommands();
                     break;
+                case "date":
+                    date = Date.valueOf(input.next());
+                    entries = dao.getEntriesForDate(statement, date);
+                    entries.forEach(e -> System.out.println(e));
+                    break;
                 case "teams":
                     List<String> teams = dao.getLocalTeams(statement);
                     for (int x = 0; x < teams.size(); x++) {
