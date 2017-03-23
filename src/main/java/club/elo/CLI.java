@@ -244,6 +244,8 @@ public class CLI {
         System.out.println(" -- return the top 20 teams determined by elo growth during the year [YYYY] provided");
         System.out.println("changeduring [TeamName][Year]");
         System.out.println(" -- return the net elo change for [TeamName] for the [Year] specified");
+        System.out.println("worstrank [TeamName]");
+        System.out.println(" -- return the lowest rank [TeamName] has ever been.");
         System.out.println("\nAll Dates must be in SQL date format (YYYY-MM-DD)");
     }
 }
