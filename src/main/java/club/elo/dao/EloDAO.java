@@ -51,7 +51,6 @@ public class EloDAO {
         Optional<EloEntry> entry = getMinEloEntry(statement, clubName);
 
         if (entry.isPresent()) {
-            System.out.println(entry.get());
             String sqlQuery = String.format("SELECT (1 + count(*)) from ClubEloEntry where startDate <= '%s' and endDate >= '%s' and elo >= %s", entry.get().getStartDate(), entry.get().getEndDate(), entry.get().getElo());
             
             try {
