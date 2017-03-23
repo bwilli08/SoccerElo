@@ -18,6 +18,43 @@ import java.util.Set;
 public class EloDAO {
 
     private final ResultSetConverter rsConverter;
+    // used for query number 5
+    private static final String TEAMS_ON_DATE = "select * from ClubEloEntry E where '%s' >= E.startDate and '%s' <= E.endDate";
+    private static final String LOW_ELO = "select min(E.elo) as lowElo from (%s) as E order by E.elo desc limit 32";
+    // used for query number 7
+    private static final String TEAM_WORST = "SELECT * FROM ClubEloEntry WHERE name='%s' ORDER BY elo ASC LIMIT 1";
+    // used for query number 8
+    private static final String TEAMS_ERA = "select * from ClubEloEntry C where C.startDate >= '%s' and C.endDate <= '%s'";
+    private static final String AVG_ERA = "select T.country, T.name, avg(T.elo) as avgElo from (%s) as T group by T.country, T.name;";
+    private static final String MIN_AVG = "select min(A.avgElo) as minAvg from (%s) as A order by A.avgElo desc limit 20";
+
+    // Helper method for getTeamLowestRank
+    private Set<EloEntry> getMinEloEntry(final Statement statement, final String clubname) {
+        String sqlQuery = String.format(TEAM_WORST, clubname);
+        try {
+            ResultSet rs = statement.executeQuery(sqlQuery);
+            return rsConverter.convertToPOJO(rs);
+        } catch (Exception e) {
+            throw new RuntimeException("Failure querying local database.", e);
+        }
+    }
+
+    public int getTeamLowestRank(final Statement statement, final String clubName) {
+        Optional<EloEntry> entry = getMinEloEntry(statement, clubName).stream().findFirst();
+
+        if (entry.isPresent()) {
+            String sqlQuery = String.format("SELECT 1 + count(*) as numBetterTeams from ClubEloEntry C where C.startDate <= '%s' and C.endDate >= '%s' and C.elo >= %s", entry.get().getStartDate(), entry.get().getEndDate(), entry.get().getElo());
+            
+            try {
+                ResultSet rs = statement.executeQuery(sqlQuery);
+                return rsConverter.convertToRank(rs);
+            } catch (Exception e) {
+                throw new RuntimeException("Failure querying local database.", e);
+            }
+
+        }
+           
+    }
 
     public Set<EloEntry> getBestAllTime(final Statement statement, final Integer limit) {
         String sqlQuery = String.format("SELECT * FROM ClubEloEntry ORDER BY elo DESC LIMIT %d", limit);
